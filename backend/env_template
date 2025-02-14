@@ -1,0 +1,9 @@
+LLM_MODEL_NAME=glm-4-flash
+LLM_BASE_URL=https://open.bigmodel.cn/api/paas/v4/
+LLM_API_KEY=xxx
+
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=password
+DB_NAME=praiseme

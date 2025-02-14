@@ -1,0 +1,3 @@
+arb-dir: lib/l10n # 本地化文件路径
+template-arb-file: intl_en.arb # 模板文件，通常是默认语言
+output-localization-file: app_localizations.dart # 生成的本地化文件

@@ -1,0 +1,15 @@
+{
+  "@@locale": "en",
+  "title": "AI Praise",
+  "directPraise": "Direct Praise",
+  "hintPraise": "Hint Praise",
+  "voicePraise": "Voice Praise",
+  "photoPraise": "Photo Praise",
+  "stylePraise": "Style Praise",
+  "leaderboard": "Leaderboard",
+  "instantPraise": "Instant Praise",
+  "collectingPraiseEnergy": "Collecting Praise Energy...",
+  "receiveTodayHappy": "Click the button to receive today's happiness~",
+  "serverError": "Oops~ The server is experiencing issues",
+  "networkError": "Network connection failed"
+}

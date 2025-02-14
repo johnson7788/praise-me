@@ -1,0 +1,9 @@
+pymysql
+python-dotenv
+fastapi
+gtts
+openai
+uvicorn
+gunicorn
+aiomysql
+python-multipart

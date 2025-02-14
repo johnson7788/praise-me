@@ -1,0 +1,15 @@
+{
+  "@name": "zh",
+  "title": "AI 夸夸",
+  "directPraise": "直接夸",
+  "hintPraise": "提示夸",
+  "voicePraise": "语音夸",
+  "photoPraise": "拍拍夸",
+  "stylePraise": "风格夸",
+  "leaderboard": "排行榜",
+  "instantPraise": "立刻被夸",
+  "collectingPraiseEnergy": "夸夸能量收集中...",
+  "receiveTodayHappy": "点击按钮接收今日份的快乐~",
+  "serverError": "哎呀~ 服务器开小差了",
+  "networkError": "网络连接失败"
+}

@@ -1,0 +1,15 @@
+{
+  "@@locale": "ja",
+  "title": "AI 賞賛",
+  "directPraise": "直接賞賛",
+  "hintPraise": "ヒント賞賛",
+  "voicePraise": "音声賞賛",
+  "photoPraise": "写真賞賛",
+  "stylePraise": "スタイル賞賛",
+  "leaderboard": "リーダーボード",
+  "instantPraise": "インスタント プライズ",
+  "collectingPraiseEnergy": "賞賛エネルギーを集めています...",
+  "receiveTodayHappy": "ボタンをクリックして今日の幸せを受けてください~",
+  "serverError": "サーバーに一時的な問題が発生しました",
+  "networkError": "ネットワーク接続に失敗しました"
+}

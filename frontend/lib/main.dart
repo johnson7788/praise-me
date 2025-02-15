@@ -4,12 +4,14 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'ai_praise/direct_praise.dart';
-import 'ai_praise/hint_praise.dart';
+import 'ai_praise/achievement_praise.dart';
 import 'ai_praise/voice_praise.dart';
 import 'ai_praise/photo_praise.dart';
-import 'ai_praise/style_praise.dart';
+import 'ai_praise/star_praise.dart';
 import 'ai_praise/leaderboard.dart';
 import 'language_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'config.dart'; // 确保导入配置
 
 void main() {
   runApp(
@@ -28,7 +30,7 @@ class PraiseMeApp extends StatelessWidget {
     return Consumer<LanguageProvider>(
       builder: (context, languageProvider, child) {
         return MaterialApp(
-          title: 'Prise Me',
+          title: 'Praise Me',
           localizationsDelegates: [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -42,10 +44,10 @@ class PraiseMeApp extends StatelessWidget {
           home: HomePage(),
           routes: {
             '/direct': (context) => DirectPraisePage(),
-            '/hint': (context) => HintPraisePage(),
+            '/achievement': (context) => AchievementPraisePage(),
             '/voice': (context) => VoicePraisePage(),
             '/photo': (context) => PhotoPraisePage(),
-            '/style': (context) => StylePraisePage(),
+            '/star': (context) => StarPraisePage(),
             '/leaderboard': (context) => LeaderboardPage(),
           },
         );
@@ -84,14 +86,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late List<NavItem> _navItems; // 延迟初始化
-  // final List<NavItem> _navItems = [
-  //   NavItem(icon: Icons.record_voice_over, label: '直接夸', route: '/direct', color: Colors.blue),
-  //   NavItem(icon: Icons.lightbulb, label: '提示夸', route: '/hint', color: Colors.green),
-  //   NavItem(icon: Icons.mic, label: '语音夸', route: '/voice', color: Colors.orange),
-  //   NavItem(icon: Icons.camera_alt, label: '拍拍夸', route: '/photo', color: Colors.red),
-  //   NavItem(icon: Icons.palette, label: '风格夸', route: '/style', color: Colors.purple),
-  //   NavItem(icon: Icons.star, label: '挑战', route: '/challenge', color: Colors.amber),
-  // ];
 
   @override
   void initState() {
@@ -118,8 +112,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       ),
       NavItem(
         icon: Icons.lightbulb,
-        label: (context) => AppLocalizations.of(context)!.hintPraise,
-        route: '/hint',
+        label: (context) => AppLocalizations.of(context)!.achievementPraise,
+        route: '/achievement',
         color: Colors.green,
       ),
       NavItem(
@@ -136,8 +130,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       ),
       NavItem(
         icon: Icons.palette,
-        label: (context) => AppLocalizations.of(context)!.stylePraise,
-        route: '/style',
+        label: (context) => AppLocalizations.of(context)!.starPraise,
+        route: '/star',
         color: Colors.purple,
       ),
       NavItem(
@@ -169,6 +163,63 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         title: Text(AppLocalizations.of(context)!.title),
         centerTitle: true,
         actions: [
+          //下载菜单
+          PopupMenuButton<String>(
+            icon: Icon(Icons.download),
+            onSelected: (platform) async {
+              final url = '${AppConfig.BACKEND_API}/static/app/$platform';
+              if (await canLaunch(url)) {
+                await launch(url);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('无法下载应用')),
+                );
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'PraiseMe.apk',
+                child: Row(
+                  children: [
+                    Icon(Icons.android, color: Colors.green),
+                    SizedBox(width: 8),
+                    Text('Android')
+                  ],
+                ),
+              ),
+              // PopupMenuItem(
+              //   value: 'PraiseMe.ipa',
+              //   child: Row(
+              //     children: [
+              //       Icon(Icons.phone_iphone, color: Colors.blue),
+              //       SizedBox(width: 8),
+              //       Text('iOS')
+              //     ],
+              //   ),
+              // ),
+              PopupMenuItem(
+                value: 'PraiseMe.dmg',
+                child: Row(
+                  children: [
+                    Icon(Icons.desktop_mac, color: Colors.grey),
+                    SizedBox(width: 8),
+                    Text('macOS')
+                  ],
+                ),
+              ),
+              // PopupMenuItem(
+              //   value: 'PraiseMe.exe',
+              //   child: Row(
+              //     children: [
+              //       Icon(Icons.laptop_windows, color: Colors.blue),
+              //       SizedBox(width: 8),
+              //       Text('Windows')
+              //     ],
+              //   ),
+              // ),
+            ],
+          ),
+          //多语言切换
           PopupMenuButton<String>(
             onSelected: _changeLanguage,
             itemBuilder: (context) => [

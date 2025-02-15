@@ -22,33 +22,18 @@ CREATE DATABASE IF NOT EXISTS `{db}` DEFAULT CHARACTER SET utf8mb4;
 
 USE `{db}`;
 
-CREATE TABLE IF NOT EXISTS users (
-    user_id VARCHAR(36) PRIMARY KEY,
-    username VARCHAR(50) UNIQUE,
+CREATE TABLE IF NOT EXISTS praise_records (
+    record_id VARCHAR(100) PRIMARY KEY,
+    praise_type ENUM('direct', 'achievement', 'photo', 'style'),
+    content TEXT,
+    style VARCHAR(20),
+    likes INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS praise_records (
-    record_id VARCHAR(36) PRIMARY KEY,
-    user_id VARCHAR(36),
-    praise_type ENUM('direct', 'hint', 'photo', 'style'),
-    content TEXT,
-    style VARCHAR(20),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id)
-);
-
-CREATE TABLE IF NOT EXISTS challenges (
-    challenge_id VARCHAR(36) PRIMARY KEY,
-    user_id VARCHAR(36),
-    challenge_type ENUM('selfie', 'diary', 'share'),
-    completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id)
-);
-
-CREATE INDEX idx_praise_records ON praise_records(user_id, created_at);
-CREATE INDEX idx_challenges ON challenges(user_id, completed_at);
+CREATE INDEX idx_praise_records ON praise_records(record_id, created_at);
 """
+
 
 def main():
     config = get_db_config()

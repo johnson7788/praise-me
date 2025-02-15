@@ -9,11 +9,16 @@ flutter run -d macOS  # 你想运行在 macOS 设备上
 # 前端目录结构
 lib/
     ai_praise/
-        direct_praise.dart     // 直接夸
-        hint_praise.dart       // 提示夸
-        voice_praise.dart      // 语音夸
-        photo_praise.dart      // 拍拍夸
-        style_praise.dart      // 风格夸
+        direct_praise.dart       // 直接夸
+        achievement_praise.dart  // 成就夸
+        voice_praise.dart        // 语音夸
+        photo_praise.dart        // 拍拍夸
+        star_praise.dart         // 明星夸
+        leaderboard.dart         // 排行榜
+    l10n/
+        intl_en.art         //英语语言
+        intl_zh.art         //中文语言
+        intl_ja.art         //日语语言
     config.dart //配置文件
     main.dart  //程序入口
     language_provider.dart   //状态文件，存储当前用户切换的语言

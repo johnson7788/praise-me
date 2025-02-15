@@ -100,7 +100,7 @@ abstract class AppLocalizations {
   /// No description provided for @title.
   ///
   /// In en, this message translates to:
-  /// **'AI Praise'**
+  /// **'Praise Me'**
   String get title;
 
   /// No description provided for @directPraise.
@@ -109,11 +109,11 @@ abstract class AppLocalizations {
   /// **'Direct Praise'**
   String get directPraise;
 
-  /// No description provided for @hintPraise.
+  /// No description provided for @achievementPraise.
   ///
   /// In en, this message translates to:
-  /// **'Hint Praise'**
-  String get hintPraise;
+  /// **'Achievement Praise'**
+  String get achievementPraise;
 
   /// No description provided for @voicePraise.
   ///
@@ -127,11 +127,11 @@ abstract class AppLocalizations {
   /// **'Photo Praise'**
   String get photoPraise;
 
-  /// No description provided for @stylePraise.
+  /// No description provided for @starPraise.
   ///
   /// In en, this message translates to:
-  /// **'Style Praise'**
-  String get stylePraise;
+  /// **'Star Praise'**
+  String get starPraise;
 
   /// No description provided for @leaderboard.
   ///
@@ -144,6 +144,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Instant Praise'**
   String get instantPraise;
+
+  /// No description provided for @againPraise.
+  ///
+  /// In en, this message translates to:
+  /// **'Praise Again'**
+  String get againPraise;
 
   /// No description provided for @collectingPraiseEnergy.
   ///
@@ -168,6 +174,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Network connection failed'**
   String get networkError;
+
+  /// No description provided for @sharePraise.
+  ///
+  /// In en, this message translates to:
+  /// **'Praise her/him'**
+  String get sharePraise;
+
+  /// No description provided for @copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
+
+  /// No description provided for @saveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Success!'**
+  String get saveSuccess;
+
+  /// No description provided for @saveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Failed'**
+  String get saveFailed;
+
+  /// No description provided for @copySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to Clipboard'**
+  String get copySuccess;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @achievementHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your achievements/mood/hobbies'**
+  String get achievementHint;
+
+  /// No description provided for @achievementExample.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Learned make up today!'**
+  String get achievementExample;
+
+  /// No description provided for @achievementValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Please share something first~'**
+  String get achievementValidation;
+
+  /// No description provided for @generatePraise.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Custom Praise'**
+  String get generatePraise;
+
+  /// No description provided for @operationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The operation failed. The administrator will handle it later.'**
+  String get operationFailed;
+
+  /// No description provided for @noDataFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No data available'**
+  String get noDataFound;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

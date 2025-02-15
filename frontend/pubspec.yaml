@@ -42,6 +42,9 @@ dependencies:
   record:  #web应用，用于录音
   audioplayers: # 用于播放音频
   image_picker: #图片获取
+  crypto: # 加密
+  clipboard:  #复制到剪切板
+  url_launcher: ^6.1.7
 
 
   # The following adds the Cupertino Icons font to your application.

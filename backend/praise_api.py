@@ -28,35 +28,14 @@ logging.basicConfig(
 load_dotenv(dotenv_path=".env")
 
 # 数据库模型
-class User(BaseModel):
-    user_id: str
-    username: str
 
 class PraiseRecord(BaseModel):
-    record_id: str
-    user_id: str
+    record_id: str  #唯一值，例如UUID
     praise_type: str
     content: str
-    style: Optional[str] = None
+    like: int  #喜欢的数量
     created_at: datetime
 
-class ChallengeRecord(BaseModel):
-    challenge_id: str
-    user_id: str
-    challenge_type: str
-    completed_at: datetime
-
-# 初始化FastAPI
-app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# CORS配置
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # 环境变量
 LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME")
@@ -80,7 +59,6 @@ LANGUAGE_MAP = {
     "ja": "Japanese",
     "ko": "Korean"
 }
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("🚀 服务器启动中...")
@@ -93,11 +71,23 @@ async def lifespan(app: FastAPI):
     pool.close()
     await pool.wait_closed()
 
+app = FastAPI(lifespan=lifespan)
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# CORS配置
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # 通用生成逻辑
-async def generate_praise_logic(input_text: str, style: str = "normal", language: str = "zh"):
+async def generate_praise_logic(input_text: str, role:str="我的好友", style: str = "normal", language: str = "zh"):
     """
     生成夸夸的内容
     input_text: 用户输入
+    role: str: 用户角色，谁来夸我？男朋友，明星，总理
     """
     styles = {
         "normal": "温暖真诚",
@@ -110,10 +100,10 @@ async def generate_praise_logic(input_text: str, style: str = "normal", language
     logging.info(f"用户输入{input_text}，风格{style}，语言{language_name}")
     try:
         client = openai.OpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL)
-        prompt = f"""你是一个专业夸夸助手，根据以下要求生成鼓励：
+        prompt = f"""你的身份是{role}，请对我进行夸奖：
         输入内容：{input_text}
         风格要求：{styles.get(style, styles['normal'])}
-        输出要求：100字以内，使用{language_name}，避免敏感词
+        输出要求：100字以内，语言是：{language_name}
         """
         response = client.chat.completions.create(
             model=LLM_MODEL_NAME,
@@ -142,10 +132,15 @@ class Database:
                 return cur
 
 # 核心功能API
-class PraiseRequest(BaseModel):
+class AchievementRequest(BaseModel):
     text: Optional[str] = None
-    style: str = "normal"
     language: Optional[str] = "zh" # 默认为中文,可选其它语言，例如日语，英语等
+
+class StarRequest(BaseModel):
+    text: Optional[str] = None
+    role: Optional[str] = None
+    language: Optional[str] = "zh" # 默认为中文,可选其它语言，例如日语，英语等
+
 
 class DirectRequest(BaseModel):
     language: Optional[str] = "zh"
@@ -153,15 +148,15 @@ class DirectRequest(BaseModel):
 @app.post("/direct-praise")
 async def direct_praise(request: DirectRequest):
     """直接夸模式"""
-    default_prompt = "请随机生成一个正能量的夸赞，面向普通用户的日常鼓励"
+    default_prompt = "请给我比较直白的夸奖，让我看到后满意大笑"
     return await generate_praise_logic(default_prompt, language=request.language)
 
-@app.post("/hint-praise")
-async def hint_praise(request: PraiseRequest):
-    """提示夸模式"""
+@app.post("/achievement-praise")
+async def achievement_praise(request: AchievementRequest):
+    """成就夸模式"""
     if not request.text:
         raise HTTPException(400, "请输入提示内容")
-    return await generate_praise_logic(request.text, request.style)
+    return await generate_praise_logic(request.text, language=request.language)
 
 @app.post("/photo-praise")
 async def photo_praise(
@@ -181,10 +176,71 @@ async def photo_praise(
     except Exception as e:
         raise HTTPException(500, f"图片处理失败: {str(e)}")
 
-@app.post("/style-praise")
-async def style_praise(request: PraiseRequest):
-    """风格夸模式"""
-    return await generate_praise_logic(request.text, request.style)
+@app.post("/star-praise")
+async def star_praise(request: StarRequest):
+    """明星夸模式"""
+    return await generate_praise_logic(request.text, role=request.role, language=request.language)
+
+class SavePraiseRequest(BaseModel):
+    record_id: str
+    praise_type: str
+    content: str
+    style: Optional[str] = "normal"
+@app.post("/save-praise-record")
+async def save_praise_record(request: SavePraiseRequest):
+    """保存夸赞记录（喜欢或分享时调用）
+    先查询，如果存在，那么更新likes+1，否则插入1条新的
+    """
+    try:
+        created_at = datetime.now()
+        async with pool.acquire() as conn:
+            async with conn.cursor() as cur:
+                # 先检查 record_id 是否存在
+                await cur.execute(
+                    "SELECT * FROM praise_records WHERE record_id = %s",
+                    (request.record_id,)
+                )
+                existing_record = await cur.fetchone()
+
+                if existing_record:
+                    # 如果存在，则更新 likes
+                    await cur.execute(
+                        "UPDATE praise_records SET `likes` = `likes` + 1 WHERE record_id = %s",
+                        (request.record_id,)
+                    )
+                else:
+                    # 如果不存在，则插入新的记录
+                    await cur.execute(
+                        "INSERT INTO praise_records (record_id, praise_type, content, style,`likes`, created_at) "
+                        "VALUES (%s, %s, %s, %s, %s, %s)",
+                        (request.record_id, request.praise_type, request.content, request.style,1, created_at)
+                    )
+
+                # 提交事务
+                await conn.commit()
+
+        return {"message": "记录保存成功"}
+    except Exception as e:
+        logging.error(f"保存记录失败: {str(e)}")
+        raise HTTPException(500, detail=f"保存失败: {str(e)}")
+
+@app.get("/get-praise-record/{record_id}")
+async def get_praise_record(record_id: str):
+    """通过UUID查询夸赞内容"""
+    try:
+        async with pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                await cur.execute(
+                    "SELECT record_id, praise_type, content, `likes`, created_at "
+                    "FROM praise_records WHERE record_id = %s",
+                    (record_id,)
+                )
+                record = await cur.fetchone()
+                if not record:
+                    raise HTTPException(status_code=404, detail="记录不存在")
+                return record
+    except Exception as e:
+        raise HTTPException(500, detail=f"查询失败: {str(e)}")
 
 # 语音生成
 @app.post("/generate-voice")
@@ -197,43 +253,69 @@ async def generate_voice(text: str = Form(...)):
     except Exception as e:
         raise HTTPException(500, f"语音生成失败: {str(e)}")
 
-# 社区互动API
-@app.post("/challenge/complete")
-async def complete_challenge(user_id: str = Form(...), challenge_type: str = Form(...)):
-    """完成每日挑战"""
-    try:
-        await Database.execute_query(
-            "INSERT INTO challenges (challenge_id, user_id, challenge_type) VALUES (%s, %s, %s)",
-            (str(uuid.uuid4()), user_id, challenge_type)
-        )
-        return {"status": "success"}
-    except Exception as e:
-        raise HTTPException(500, f"记录挑战失败: {str(e)}")
-
+# 社区排行
 @app.get("/leaderboard")
 async def get_leaderboard(period: str = "daily"):
-    """获取夸夸排行榜"""
+    """获取夸夸排行榜,返回夸夸的record_id,praise_type,content,likes"""
     time_filter = {
         "daily": datetime.now() - timedelta(days=1),
         "weekly": datetime.now() - timedelta(weeks=1),
         "monthly": datetime.now() - timedelta(days=30)
-    }.get(period, datetime.now() - timedelta(days=1))
-    
+    }.get(period.lower(), datetime.now() - timedelta(days=1))
+
     try:
+        # 执行数据库查询（假设使用asyncpg异步驱动）
         async with pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
                 await cur.execute("""
-                    SELECT user_id, COUNT(*) as praise_count 
+                    SELECT record_id, praise_type, content, likes 
                     FROM praise_records 
-                    WHERE created_at > %s
-                    GROUP BY user_id 
-                    ORDER BY praise_count DESC 
-                    LIMIT 20
+                    WHERE created_at >= %s
+                    ORDER BY likes DESC
+                    LIMIT 100
                 """, (time_filter,))
                 result = await cur.fetchall()
-                return {"leaderboard": result}
+                if not result:
+                    raise HTTPException(status_code=404, detail="No leaderboard data found for the selected period.")
+        result = [dict(record) for record in result]
+        return JSONResponse(content=result, headers={"Content-Type": "application/json; charset=utf-8"})
     except Exception as e:
-        raise HTTPException(500, f"获取排行榜失败: {str(e)}")
+        logging.error(f"获取排行榜失败: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"获取排行榜失败: {str(e)}"
+        ) from e
+
+@app.post("/add-praise-like")
+async def add_praise_like(request: Request):
+    """增加指定记录的like数（记录存在时likes+1，记录不存在返回错误）"""
+    json_data = await request.json()
+    record_id = json_data.get("record_id")
+    try:
+        async with pool.acquire() as conn:
+            async with conn.cursor() as cur:
+                # 检查 record_id 是否存在
+                await cur.execute(
+                    "SELECT * FROM praise_records WHERE record_id = %s",
+                    (record_id,)
+                )
+                existing_record = await cur.fetchone()
+
+                if existing_record:
+                    # 如果记录存在，更新 likes 数量
+                    await cur.execute(
+                        "UPDATE praise_records SET `likes` = `likes` + 1 WHERE record_id = %s",
+                        (record_id,)
+                    )
+                    await conn.commit()
+                    return {"message": "Like 增加成功"}
+                else:
+                    # 如果记录不存在，返回错误
+                    logging.error(f"{record_id}: 记录不存在")
+                    raise HTTPException(status_code=404, detail="记录不存在")
+    except Exception as e:
+        logging.error(f"{record_id}: 增加 like 失败: {str(e)}")
+        raise HTTPException(500, detail=f"增加失败: {str(e)}")
 
 @app.api_route("/ping", methods=["GET", "POST"])
 async def ping(request: Request):

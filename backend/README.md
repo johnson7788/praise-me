@@ -49,17 +49,35 @@ curl -X POST \
   -F "style=poetic" \
   http://api.example.com/achievement-praise
 
-3. 拍拍夸赞（图片夸）
-请求方式: POST
-路径: /photo-praise
-表单参数:
-file (必填): 上传的图片文件（支持 jpg/png）
-响应:
+3. 拍拍夸（图片和视频夸）
+接口路径：/photo-praise
+请求方式：POST
+Content-Type：multipart/form-data
+响应格式：JSON
+
+请求参数
+参数名	位置	类型	必填	说明
+file	form	file	是	上传的图片/视频文件（支持格式见下表）
+language	form	string	否	语言代码 (默认zh，支持en/ja)
+支持文件格式：
+图片：jpg/jpeg/png
+视频：mp4
+
+响应示例
+成功响应 (200):
 {
-  "text": "基于图片分析的夸赞内容",
-  "image_url": "/static/uploads/filename.jpg"
+  "text": "这张照片里的你散发着自信的光芒，连阳光都为你喝彩！"
 }
-说明: 图片将保存至/static/uploads/目录
+错误响应 (400):
+{
+  "detail": "Unsupported file type. Supported types: jpg, jpeg, png, mp4"
+} 
+
+4. 调用示例
+使用 cURL:
+curl -X POST "http://localhost:6002/photo-praise" \
+  -F "file=@selfie.jpg" \
+  -F "language=en"
 
 4. 语音生成
 请求方式: POST
@@ -86,13 +104,13 @@ Content-Type: application/json
 请求参数（Body）
 字段名	类型	必填	描述
 record_id	string	是	夸赞记录的唯一标识（UUID）
-praise_type	string	是	夸赞类型（如：direct_praise）
-content	string	是	夸赞内容
+praise_type	string	是	夸赞类型（如：'direct', 'achievement', 'photo', 'star', 'animate'）
+content	string	是	夸赞内容, 或者animate的话，是图片的名称或者url
 likes	int	是	喜欢数量（默认 1）
 请求示例
 {
   "record_id": "550e8400-e29b-41d4-a716-446655440000",
-  "praise_type": "direct_praise",
+  "praise_type": "direct",
   "content": "你今天的表现真是太棒了！",
   "likes": 1
 }
@@ -106,42 +124,6 @@ message	string	接口返回的消息
 错误响应
 HTTP 状态码	错误信息	描述
 400	Bad Request	请求参数缺失或格式错误
-500	Internal Server Error	服务器内部错误（如数据库异常）
-
-6. 查询夸赞记录接口
-接口描述
-通过 UUID 查询对应的夸赞记录内容。
-
-请求地址
-GET /get-praise-record/{record_id}
-
-请求方法：
-GET
-
-请求参数（Path）：
-字段名	类型	必填	描述
-record_id	string	是	夸赞记录的唯一标识（UUID）
-请求示例：
-GET /get-praise-record/550e8400-e29b-41d4-a716-446655440000
-
-响应参数：
-字段名	类型	描述
-record_id	string	夸赞记录的唯一标识（UUID）
-praise_type	string	夸赞类型（如：direct_praise）
-content	string	夸赞内容
-created_at	string	记录创建时间（ISO 8601 格式）
-
-响应示例：
-{
-  "record_id": "550e8400-e29b-41d4-a716-446655440000",
-  "praise_type": "direct_praise",
-  "content": "你今天的表现真是太棒了！",
-  "created_at": "2023-10-01T12:34:56Z"
-}
-
-错误响应：
-HTTP 状态码	错误信息	描述
-404	Not Found	记录不存在
 500	Internal Server Error	服务器内部错误（如数据库异常）
 
 # 7.夸夸排行榜
@@ -208,4 +190,174 @@ Content-Type: application/json
 服务器错误:
 {
     "detail": "增加失败: <具体错误>"
+}
+
+6.
+GET /star-info
+功能：获取明星信息列表
+参数：
+language：过滤指定语言的明星（如zh/en）
+limit：限制返回数量
+
+响应示例：
+{
+    "stars": [
+        {
+            "name": "周杰伦",
+            "language": "zh",
+            "sex": "male",
+            "id": 1
+        },
+        {
+            "name": "Taylor Swift",
+            "language": "en",
+            "sex": "female",
+            "id": 2
+        }
+    ]
+}
+
+
+接口文档: POST /star-praise
+功能
+此接口用于生成明星夸奖语句，返回一个根据请求语言和角色定制的夸奖内容。
+
+请求方法
+POST
+
+请求参数
+role (可选): string
+描述：指定夸奖语句中角色的名称或类型，帮助定制语句风格。例如：“明星名字”或“人物角色”。
+默认值：None
+language (可选): string
+描述：指定返回内容的语言。
+默认值："zh" (中文)
+支持语言：
+"zh": 中文
+"ja": 日语
+"en": 英语
+等其他支持的语言
+
+请求体示例
+编辑
+{
+  "role": "小明",
+  "language": "en"
+}
+响应
+text (string): 返回生成的夸奖语句内容，带有角色名和适合的风格。
+响应体示例
+编辑
+{
+  "text": "I am Xiao Ming, and you are truly amazing! Your talent shines bright and leaves everyone in awe."
+}
+
+POST /generate-animate
+描述: 该接口接收一个文本提示，并生成一张图片，返回图片的URL。
+content-type	application/json
+请求参数:
+text (必选): 需要根据此文本生成图片的提示。
+请求示例:
+{
+    "text": "A beautiful sunset over the mountains"
+}
+响应:
+200 OK: 成功生成图片，返回图片URL。
+{
+    "img_url": "https://example.com/generated_image.jpg"
+}
+500 Internal Server Error: 生成图片失败。
+{
+    "detail": "生成动图失败: <错误信息>"
+}
+
+CosyVoice外部接口：
+POST /api/inference_sft
+描述：根据指定的说话人ID和文本进行语音合成。
+
+请求体：
+{
+  "tts_text": "你好",
+  "spk_id": "中文女"
+}
+tts_text：要进行TTS的文本。（必填）
+spk_id：说话人ID。（必填）
+响应：
+
+返回生成的语音文件 sound.wav。
+Content-Type: audio/wav
+Content-Disposition: attachment; filename="sound.wav"
+
+2. POST /api/tts
+描述：根据语言选择说话人ID，并生成语音。
+
+请求体：
+{
+  "tts_text": "Hello, world!",
+  "language": "en"
+}
+tts_text：要进行TTS的文本。（必填）
+language：选择的语言，支持 zh, en, ja, ko 等。（必填）
+响应：
+
+返回生成的语音文件 sound.wav。
+Content-Type: audio/wav
+Content-Disposition: attachment; filename="sound.wav"
+
+
+## 评论接口文档
+
+### 1. 获取评论列表
+**URL**: `/comments/{record_id}`  
+**方法**: GET  
+**参数**:
+- `record_id` (路径参数): 夸夸记录ID
+**成功响应**:
+```json
+{
+  "comments": [
+    {
+      "comment_id": 1,
+      "content": "这个夸夸太棒了！",
+      "created_at": "2024-03-20T10:30:00"
+    }
+  ]
+}
+添加评论
+URL: /comments/{record_id}
+方法: POST
+参数:
+record_id (路径参数): 夸夸记录ID
+请求体:
+{
+  "content": "评论内容"
+}
+成功响应:
+{
+  "message": "评论添加成功"
+}
+错误响应:
+404: 当record_id不存在时
+400: 当content为空时
+
+
+### GET /get-praise-record/{record_id}
+#### 功能描述
+通过记录ID查询夸赞记录的详细信息
+
+#### 请求参数
+| 参数名     | 位置   | 类型   | 必填 | 说明                 |
+|------------|--------|--------|------|----------------------|
+| record_id  | path   | string | 是   | 夸赞记录的唯一标识符 |
+
+#### 响应信息
+**成功响应 (200 OK)**
+```json
+{
+    "record_id": "550e8400-e29b-41d4-a716-446655440000",
+    "praise_type": "direct",
+    "content": "你真是才华横溢！",
+    "style": "normal",
+    "likes": 3,
+    "created_at": "2024-02-20 14:30:45"
 }

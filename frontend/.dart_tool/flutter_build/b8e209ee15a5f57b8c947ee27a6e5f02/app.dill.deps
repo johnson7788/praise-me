@@ -1269,6 +1269,7 @@ file:///Users/admin/flutterdev/flutter/packages/flutter_web_plugins/lib/src/navi
 file:///Users/admin/flutterdev/flutter/packages/flutter_web_plugins/lib/src/navigation/utils.dart
 file:///Users/admin/flutterdev/flutter/packages/flutter_web_plugins/lib/src/plugin_event_channel.dart
 file:///Users/admin/flutterdev/flutter/packages/flutter_web_plugins/lib/src/plugin_registry.dart
+file:///Users/admin/flutterdev/flutter/packages/flutter_web_plugins/lib/url_strategy.dart
 file:///Users/admin/git/praise-me/frontend/.dart_tool/flutter_build/b8e209ee15a5f57b8c947ee27a6e5f02/main.dart
 file:///Users/admin/git/praise-me/frontend/.dart_tool/flutter_build/b8e209ee15a5f57b8c947ee27a6e5f02/web_plugin_registrant.dart
 file:///Users/admin/git/praise-me/frontend/.dart_tool/flutter_gen/gen_l10n/app_localizations.dart
@@ -1277,11 +1278,12 @@ file:///Users/admin/git/praise-me/frontend/.dart_tool/flutter_gen/gen_l10n/app_l
 file:///Users/admin/git/praise-me/frontend/.dart_tool/flutter_gen/gen_l10n/app_localizations_zh.dart
 file:///Users/admin/git/praise-me/frontend/.dart_tool/package_config.json
 file:///Users/admin/git/praise-me/frontend/lib/ai_praise/achievement_praise.dart
+file:///Users/admin/git/praise-me/frontend/lib/ai_praise/animate_praise.dart
 file:///Users/admin/git/praise-me/frontend/lib/ai_praise/direct_praise.dart
 file:///Users/admin/git/praise-me/frontend/lib/ai_praise/leaderboard.dart
 file:///Users/admin/git/praise-me/frontend/lib/ai_praise/photo_praise.dart
 file:///Users/admin/git/praise-me/frontend/lib/ai_praise/star_praise.dart
-file:///Users/admin/git/praise-me/frontend/lib/ai_praise/voice_praise.dart
+file:///Users/admin/git/praise-me/frontend/lib/ai_praise/vote_you.dart
 file:///Users/admin/git/praise-me/frontend/lib/config.dart
 file:///Users/admin/git/praise-me/frontend/lib/language_provider.dart
 file:///Users/admin/git/praise-me/frontend/lib/main.dart

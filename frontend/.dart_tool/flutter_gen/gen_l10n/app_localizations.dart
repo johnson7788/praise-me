@@ -106,37 +106,43 @@ abstract class AppLocalizations {
   /// No description provided for @directPraise.
   ///
   /// In en, this message translates to:
-  /// **'Direct Praise'**
+  /// **'Directs Praise'**
   String get directPraise;
 
   /// No description provided for @achievementPraise.
   ///
   /// In en, this message translates to:
-  /// **'Achievement Praise'**
+  /// **'Achieve Praise'**
   String get achievementPraise;
 
   /// No description provided for @voicePraise.
   ///
   /// In en, this message translates to:
-  /// **'Voice Praise'**
+  /// **'Voices Praise'**
   String get voicePraise;
 
   /// No description provided for @photoPraise.
   ///
   /// In en, this message translates to:
-  /// **'Photo Praise'**
+  /// **'Photos Praise'**
   String get photoPraise;
 
   /// No description provided for @starPraise.
   ///
   /// In en, this message translates to:
-  /// **'Star Praise'**
+  /// **'Stars Praise'**
   String get starPraise;
+
+  /// No description provided for @animatePraise.
+  ///
+  /// In en, this message translates to:
+  /// **'Animate Praise'**
+  String get animatePraise;
 
   /// No description provided for @leaderboard.
   ///
   /// In en, this message translates to:
-  /// **'Leaderboard'**
+  /// **'Leader board'**
   String get leaderboard;
 
   /// No description provided for @instantPraise.
@@ -232,7 +238,7 @@ abstract class AppLocalizations {
   /// No description provided for @generatePraise.
   ///
   /// In en, this message translates to:
-  /// **'Generate Custom Praise'**
+  /// **'Can\'t Wait'**
   String get generatePraise;
 
   /// No description provided for @operationFailed.
@@ -246,6 +252,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No data available'**
   String get noDataFound;
+
+  /// No description provided for @uploadPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to upload photo/video'**
+  String get uploadPrompt;
+
+  /// No description provided for @videoSupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Supports MP4 videos'**
+  String get videoSupported;
+
+  /// No description provided for @chooseSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Source'**
+  String get chooseSource;
+
+  /// No description provided for @gallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get gallery;
+
+  /// No description provided for @camera.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get camera;
+
+  /// No description provided for @filePickError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error selecting file'**
+  String get filePickError;
+
+  /// No description provided for @uploadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload failed'**
+  String get uploadError;
+
+  /// No description provided for @generateAnimate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Animate'**
+  String get generateAnimate;
+
+  /// No description provided for @regenerateAnimate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Again'**
+  String get regenerateAnimate;
+
+  /// No description provided for @generatingAnimate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating your amazing animate...'**
+  String get generatingAnimate;
+
+  /// No description provided for @generateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to generate animate'**
+  String get generateFailed;
+
+  /// No description provided for @noPraiseText.
+  ///
+  /// In en, this message translates to:
+  /// **'Please generate praise text first'**
+  String get noPraiseText;
+
+  /// No description provided for @comments.
+  ///
+  /// In en, this message translates to:
+  /// **'Comments'**
+  String get comments;
+
+  /// No description provided for @writeComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Write Comment'**
+  String get writeComment;
+
+  /// No description provided for @commentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write your comment here...'**
+  String get commentHint;
+
+  /// No description provided for @submit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get submit;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @loadCommentsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load comments'**
+  String get loadCommentsFailed;
+
+  /// No description provided for @commentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment submitted!'**
+  String get commentSuccess;
+
+  /// No description provided for @commentFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to submit comment'**
+  String get commentFailed;
+
+  /// No description provided for @noComments.
+  ///
+  /// In en, this message translates to:
+  /// **'No comments yet'**
+  String get noComments;
+
+  /// No description provided for @praiseDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Praise Detail'**
+  String get praiseDetail;
+
+  /// No description provided for @like.
+  ///
+  /// In en, this message translates to:
+  /// **'Like'**
+  String get like;
+
+  /// No description provided for @loadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load'**
+  String get loadFailed;
+
+  /// No description provided for @likeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Like failed'**
+  String get likeFailed;
+
+  /// No description provided for @recordNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Record not found'**
+  String get recordNotFound;
+
+  /// No description provided for @takePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'take Photo'**
+  String get takePhoto;
+
+  /// No description provided for @uploadFromGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'From Gallery'**
+  String get uploadFromGallery;
+
+  /// No description provided for @appBackgroundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About Praise Me App'**
+  String get appBackgroundTitle;
+
+  /// No description provided for @appBackgroundText.
+  ///
+  /// In en, this message translates to:
+  /// **'You are one of a kind and the best in the world—thumbs up for you! 👍\n\nEveryone needs praise, and that’s the reason I developed the **Praise Me** app. In modern society, people often face stress, anxiety, and self-doubt. A well-timed compliment can bring warmth and strength. I hope to harness the power of AI to make sure everyone can receive praise anytime, anywhere—boosting confidence, improving mood, and making it your personal \"praise companion\" who understands you best.'**
+  String get appBackgroundText;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

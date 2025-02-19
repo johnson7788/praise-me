@@ -40,7 +40,7 @@ dependencies:
   flutter_sound: ^9.2.13
   permission_handler: ^10.0.0
   record:  #web应用，用于录音
-  audioplayers: # 用于播放音频
+  audioplayers: ^6.1.2 # 用于播放音频
   image_picker: #图片获取
   crypto: # 加密
   clipboard:  #复制到剪切板

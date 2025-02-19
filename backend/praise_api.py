@@ -1,20 +1,25 @@
 import uuid
 import os
 import logging
+import base64
 from datetime import datetime, timedelta
-from fastapi import FastAPI, HTTPException, UploadFile, Form, Depends,Request
+from fastapi import FastAPI, HTTPException, UploadFile, Form, Depends,Request,File,Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from gtts import gTTS
+import requests
 import openai
 from dotenv import load_dotenv
 import uvicorn
 from pydantic import BaseModel
 from typing import Optional, List
 import aiomysql
+import aiofiles
 from aiomysql import Pool
+from zhipuai import ZhipuAI
+from star_config import STAR_CONFIG
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,6 +31,7 @@ logging.basicConfig(
 
 # 加载环境变量
 load_dotenv(dotenv_path=".env")
+IMAGE_SAVE_DIR = "static/images"
 
 # 数据库模型
 
@@ -33,7 +39,8 @@ class PraiseRecord(BaseModel):
     record_id: str  #唯一值，例如UUID
     praise_type: str
     content: str
-    like: int  #喜欢的数量
+    style: str
+    likes: int  #喜欢的数量
     created_at: datetime
 
 
@@ -41,6 +48,10 @@ class PraiseRecord(BaseModel):
 LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME")
 LLM_BASE_URL = os.getenv("LLM_BASE_URL")
 LLM_API_KEY = os.getenv("LLM_API_KEY")
+VISION_MODEL_NAME = os.getenv("VISION_MODEL_NAME")
+VISION_API_KEY = os.getenv("VISION_API_KEY")
+GENIMG_MODEL_NAME = os.getenv("GENIMG_MODEL_NAME")
+GENIMG_API_KEY = os.getenv("GENIMG_API_KEY")
 DB_CONFIG = {
     "host": os.getenv("DB_HOST"),
     "port": int(os.getenv("DB_PORT")),
@@ -94,33 +105,119 @@ async def generate_praise_logic(input_text: str, role:str="我的好友", style:
         "funny": "幽默搞笑",
         "poetic": "唐诗宋词风格",
         "zhonger": "中二热血语气",
-        "domineering": "霸道总裁口吻"
+        "domineering": "霸道总裁口吻",
+        "original": "人物风格"
     }
     language_name = LANGUAGE_MAP.get(language, "中文")
     logging.info(f"用户输入{input_text}，风格{style}，语言{language_name}")
-    try:
-        client = openai.OpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL)
-        prompt = f"""你的身份是{role}，请对我进行夸奖：
-        输入内容：{input_text}
-        风格要求：{styles.get(style, styles['normal'])}
-        输出要求：100字以内，语言是：{language_name}
-        """
-        response = client.chat.completions.create(
-            model=LLM_MODEL_NAME,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7
-        )
-        content = response.choices[0].message.content
-        logging.info(f"模式: {style}, 输入{input_text}，生成结果: {content}")
-        result = {"text": content}
-        return JSONResponse(content=result, headers={"Content-Type": "application/json; charset=utf-8"})
-    except Exception as e:
-        raise HTTPException(500, f"生成失败: {str(e)}")
+    client = openai.OpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL)
+    prompt = f"""你的身份是{role}，请对我进行夸奖：
+    输入内容：{input_text}
+    风格要求：{styles.get(style, styles['normal'])}
+    输出要求：100字以内，语言是：{language_name}
+    """
+    response = client.chat.completions.create(
+        model=LLM_MODEL_NAME,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7
+    )
+    content = response.choices[0].message.content
+    logging.info(f"模式: {style}, 输入{input_text}，生成结果: {content}")
+    return content
 
-async def analyze_image(image_path: str) -> str:
-    """调用图像识别API生成描述"""
-    # 这里需要实现具体的图像识别逻辑，例如使用GPT-4V或CLIP
-    return "一张充满活力的照片，展现出积极向上的生活态度"
+
+async def analyze_image_video(file_path: str, language: str = "zh") -> str:
+    """调用图像识别和视频API生成描述
+    file_path: 图片或者视频
+    """
+    # 判断是图片还是视频
+    with open(file_path, 'rb') as img_video_file:
+        file_base = base64.b64encode(img_video_file.read()).decode('utf-8')
+    file_type = "video"
+    if file_path.endswith((".jpg", ".jpeg", ".png")):
+        file_type = "image"
+        prompt = f"根据这个图片，对我进行夸赞，要求输出语言是: {language}"
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": file_base
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": prompt
+                    }
+                ]
+            }
+        ]
+    else:
+        prompt = f"根据这个视频，对我进行夸赞，要求输出语言是: {language}"
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "video_url",
+                        "video_url": {
+                            "url": file_base
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": prompt
+                    }
+                ]
+            }
+        ]
+    language_name = LANGUAGE_MAP.get(language, "中文")
+    logging.info(f"用户提交的文件类型是{file_type}，语言{language_name}")
+    client = ZhipuAI(api_key=VISION_API_KEY)
+    response = client.chat.completions.create(
+        model=VISION_MODEL_NAME,  # 填写需要调用的模型名称
+        messages=messages
+    )
+    content = response.choices[0].message.content
+    logging.info(f"模式: {file_type}, 输入{file_path}，生成结果: {content}")
+    return content
+
+async def generate_image(prompt: str) -> str:
+    """根据prompt生成图片
+    """
+    client = ZhipuAI(api_key=GENIMG_API_KEY)
+    response = client.images.generations(
+        model=GENIMG_MODEL_NAME,  # 填写需要调用的模型编码
+        prompt=prompt,
+    )
+    img_url = response.data[0].url
+    logging.info(f"根据提示词{prompt}生成图片成功，图片地址: {img_url}")
+    # 1. 下载图片
+    try:
+        img_content = requests.get(img_url, stream=True)
+        img_content.raise_for_status()  # 检查请求是否成功
+
+        # 2. 生成唯一文件名和文件路径
+        os.makedirs(IMAGE_SAVE_DIR, exist_ok=True)  # 确保目录存在
+        image_filename = os.path.basename(img_url)
+        image_filepath = os.path.join(IMAGE_SAVE_DIR, image_filename)
+        # 3. 保存图片到本地
+        with open(image_filepath, 'wb') as f:
+            for chunk in img_content.iter_content(chunk_size=8192):
+                f.write(chunk)
+        logging.info(f"图片已保存到本地: {image_filepath}")
+        # 4. 返回前端可访问的图片路径 (相对路径)
+        return image_filepath  # 将 Windows 路径分隔符替换为 URL 兼容的 /
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"下载图片失败: {e}")
+        return ""  # 下载失败返回空字符串或者抛出异常，根据你的需求处理
+    except OSError as e:
+        logging.error(f"保存图片失败: {e}")
+        return ""  # 保存失败返回空字符串或者抛出异常，根据你的需求处理
+
 
 # 数据库操作类
 class Database:
@@ -137,9 +234,8 @@ class AchievementRequest(BaseModel):
     language: Optional[str] = "zh" # 默认为中文,可选其它语言，例如日语，英语等
 
 class StarRequest(BaseModel):
-    text: Optional[str] = None
     role: Optional[str] = None
-    language: Optional[str] = "zh" # 默认为中文,可选其它语言，例如日语，英语等
+    language: Optional[str] = "zh" # 默认为中文,可选其它语言，例如日语ja，英语,en等
 
 
 class DirectRequest(BaseModel):
@@ -149,37 +245,73 @@ class DirectRequest(BaseModel):
 async def direct_praise(request: DirectRequest):
     """直接夸模式"""
     default_prompt = "请给我比较直白的夸奖，让我看到后满意大笑"
-    return await generate_praise_logic(default_prompt, language=request.language)
-
+    try:
+        content = await generate_praise_logic(default_prompt, language=request.language)
+        result = {"text": content}
+        return JSONResponse(content=result, headers={"Content-Type": "application/json; charset=utf-8"})
+    except Exception as e:
+        raise HTTPException(500, f"生成失败: {str(e)}")
 @app.post("/achievement-praise")
 async def achievement_praise(request: AchievementRequest):
     """成就夸模式"""
     if not request.text:
         raise HTTPException(400, "请输入提示内容")
-    return await generate_praise_logic(request.text, language=request.language)
+    try:
+        content = await generate_praise_logic(request.text, language=request.language)
+        result = {"text": content}
+        return JSONResponse(content=result, headers={"Content-Type": "application/json; charset=utf-8"})
+    except Exception as e:
+        raise HTTPException(500, f"生成失败: {str(e)}")
 
 @app.post("/photo-praise")
 async def photo_praise(
-    file: UploadFile,
-    style: str = Form("normal")
+        file: UploadFile = File(..., description="上传的图片或视频文件"),
+        language: str = Form("zh", description="语言代码 (zh/en/ja)")
 ):
-    """拍拍夸模式"""
+    """拍拍夸模式，支持上传图片或视频"""
+    # 定义允许的文件类型
+    allowed_extensions = {"jpg", "jpeg", "png", "mp4"}
+
+    # 验证文件类型
+    file_extension = file.filename.split(".")[-1].lower() if "." in file.filename else ""
+    if file_extension not in allowed_extensions:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type. Supported types: {', '.join(allowed_extensions)}"
+        )
+    # 生成唯一文件名
+    unique_id = uuid.uuid4()
+    save_path = f"static/uploads/{unique_id}.{file_extension}"
+    # 异步保存文件
     try:
-        # 保存上传文件
-        file_path = f"static/uploads/{uuid.uuid4()}.jpg"
-        with open(file_path, "wb") as buffer:
-            buffer.write(await file.read())
-        
-        # 调用图像识别API
-        image_desc = await analyze_image(file_path)
-        return await generate_praise_logic(image_desc, style)
+        async with aiofiles.open(save_path, "wb") as buffer:
+            while content := await file.read(1024 * 1024):  # 分块读取1MB
+                await buffer.write(content)
     except Exception as e:
-        raise HTTPException(500, f"图片处理失败: {str(e)}")
+        logging.error(f"File save failed: {str(e)}")
+        raise HTTPException(500, "File upload failed")
+    # 调用多模态模型
+    try:
+        content = await analyze_image_video(save_path, language)
+        result = {"text": content}
+        return JSONResponse(content=result, headers={"Content-Type": "application/json; charset=utf-8"})
+    except Exception as e:
+        logging.error(f"Analysis failed: {str(e)}")
+        raise HTTPException(500, "Analysis failed")
+    finally:
+        # 生产环境建议添加文件清理逻辑
+        pass
 
 @app.post("/star-praise")
 async def star_praise(request: StarRequest):
     """明星夸模式"""
-    return await generate_praise_logic(request.text, role=request.role, language=request.language)
+    default_prompt = "请给我比较直白的夸奖，让我看到后满意大笑，并且在夸奖的开头加上我是xxx，并且话语风格和人物相符合"
+    try:
+        content = await generate_praise_logic(default_prompt, role=request.role,style="original",language=request.language)
+        result = {"text": content}
+        return JSONResponse(content=result, headers={"Content-Type": "application/json; charset=utf-8"})
+    except Exception as e:
+        raise HTTPException(500, f"生成失败: {str(e)}")
 
 class SavePraiseRequest(BaseModel):
     record_id: str
@@ -224,34 +356,17 @@ async def save_praise_record(request: SavePraiseRequest):
         logging.error(f"保存记录失败: {str(e)}")
         raise HTTPException(500, detail=f"保存失败: {str(e)}")
 
-@app.get("/get-praise-record/{record_id}")
-async def get_praise_record(record_id: str):
-    """通过UUID查询夸赞内容"""
-    try:
-        async with pool.acquire() as conn:
-            async with conn.cursor(aiomysql.DictCursor) as cur:
-                await cur.execute(
-                    "SELECT record_id, praise_type, content, `likes`, created_at "
-                    "FROM praise_records WHERE record_id = %s",
-                    (record_id,)
-                )
-                record = await cur.fetchone()
-                if not record:
-                    raise HTTPException(status_code=404, detail="记录不存在")
-                return record
-    except Exception as e:
-        raise HTTPException(500, detail=f"查询失败: {str(e)}")
-
 # 语音生成
-@app.post("/generate-voice")
-async def generate_voice(text: str = Form(...)):
+@app.post("/generate-animate")
+async def generate_animate(request: Request):
     try:
-        filename = f"static/audio/{uuid.uuid4()}.mp3"
-        tts = gTTS(text=text, lang='zh-cn')
-        tts.save(filename)
-        return FileResponse(filename, media_type="audio/mpeg")
+        json_data = await request.json()
+        text = json_data["text"]
+        img_url = await generate_image(text)
+        result = {"img_url": img_url}
+        return JSONResponse(content=result, headers={"Content-Type": "application/json; charset=utf-8"})
     except Exception as e:
-        raise HTTPException(500, f"语音生成失败: {str(e)}")
+        raise HTTPException(500, f"生成动图失败: {str(e)}")
 
 # 社区排行
 @app.get("/leaderboard")
@@ -316,6 +431,106 @@ async def add_praise_like(request: Request):
     except Exception as e:
         logging.error(f"{record_id}: 增加 like 失败: {str(e)}")
         raise HTTPException(500, detail=f"增加失败: {str(e)}")
+
+@app.get("/star-info")
+async def get_star_info(
+    language: Optional[str] = Query(None, description="按语言筛选(zh/en/ja等)"),
+    limit: Optional[int] = Query(None, description="返回数量限制")
+):
+    """获取可选的明星列表"""
+    filtered = STAR_CONFIG
+    # 自动加上id属性，根据顺序
+    for i, star in enumerate(STAR_CONFIG):
+        star["id"] = i + 1
+    if language:
+        filtered = [s for s in filtered if s["language"] == language]
+    if limit and limit > 0:
+        filtered = filtered[:limit]
+    return {"stars": filtered}
+
+# 1. 新增Pydantic模型（添加到原有模型后面）
+class CommentRequest(BaseModel):
+    content: str
+
+# 2. 新增评论接口（添加到现有接口后面）
+@app.get("/comments/{record_id}")
+async def get_comments(record_id: str):
+    """获取指定记录的评论列表"""
+    try:
+        async with pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                await cur.execute("""
+                    SELECT comment_id, content, created_at 
+                    FROM praise_comments 
+                    WHERE record_id = %s 
+                    ORDER BY created_at DESC
+                """, (record_id,))
+                comments = await cur.fetchall()
+                # datetime格式需要转换成字符串
+                for comment in comments:
+                    comment["created_at"] = comment["created_at"].strftime("%Y-%m-%d %H:%M:%S")
+                result = {"comments": comments}
+                return JSONResponse(content=result, headers={"Content-Type": "application/json; charset=utf-8"})
+    except Exception as e:
+        logging.error(f"获取评论失败: {str(e)}")
+        raise HTTPException(500, detail=f"获取评论失败: {str(e)}")
+
+@app.post("/comments/{record_id}")
+async def add_comment(record_id: str, request: CommentRequest):
+    """添加新评论"""
+    try:
+        async with pool.acquire() as conn:
+            async with conn.cursor() as cur:
+                # 检查记录是否存在
+                await cur.execute(
+                    "SELECT 1 FROM praise_records WHERE record_id = %s",
+                    (record_id,)
+                )
+                if not await cur.fetchone():
+                    raise HTTPException(404, detail="记录不存在")
+
+                # 插入评论
+                await cur.execute(
+                    "INSERT INTO praise_comments (record_id, content) VALUES (%s, %s)",
+                    (record_id, request.content)
+                )
+                await conn.commit()
+                return {"message": "评论添加成功"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"添加评论失败: {str(e)}")
+        raise HTTPException(500, detail=f"添加评论失败: {str(e)}")
+
+
+@app.get("/get-praise-record/{record_id}",response_model=PraiseRecord,responses={200: {"description": "成功获取夸赞记录"},404: {"description": "记录不存在"},500: {"description": "服务器内部错误"}})
+async def get_praise_record(record_id: str):
+    """
+    通过record_id查询夸赞记录详情
+    **参数**:
+    - record_id: 记录的唯一标识符（路径参数）
+    **返回**:
+    - JSON对象包含字段：record_id, praise_type, content, style, likes, created_at
+    """
+    try:
+        async with pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                await cur.execute(
+                    "SELECT record_id, praise_type, content, style,`likes`, created_at "
+                    "FROM praise_records WHERE record_id = %s",
+                    (record_id,)
+                )
+                record = await cur.fetchone()
+                if not record:
+                    raise HTTPException(status_code=404, detail="记录不存在")
+                # 转换datetime为字符串
+                record['created_at'] = record['created_at'].strftime("%Y-%m-%d %H:%M:%S")
+                return record
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"查询失败: {str(e)}")
+        raise HTTPException(500, detail=f"查询失败: {str(e)}")
 
 @app.api_route("/ping", methods=["GET", "POST"])
 async def ping(request: Request):

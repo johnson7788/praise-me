@@ -5,23 +5,26 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'ai_praise/direct_praise.dart';
 import 'ai_praise/achievement_praise.dart';
-import 'ai_praise/voice_praise.dart';
+import 'ai_praise/animate_praise.dart';
 import 'ai_praise/photo_praise.dart';
 import 'ai_praise/star_praise.dart';
 import 'ai_praise/leaderboard.dart';
+import 'ai_praise/vote_you.dart';
 import 'language_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_web_plugins/url_strategy.dart'; // 导入包
 import 'config.dart'; // 确保导入配置
 
 void main() {
+  setUrlStrategy(PathUrlStrategy());
   runApp(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => LanguageProvider()),
-        ],
-        child: PraiseMeApp(),
-      ),
-    );
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LanguageProvider()),
+      ],
+      child: PraiseMeApp(),
+    ),
+  );
 }
 
 class PraiseMeApp extends StatelessWidget {
@@ -45,10 +48,32 @@ class PraiseMeApp extends StatelessWidget {
           routes: {
             '/direct': (context) => DirectPraisePage(),
             '/achievement': (context) => AchievementPraisePage(),
-            '/voice': (context) => VoicePraisePage(),
+            '/animate': (context) => AnimatePraisePage(),
             '/photo': (context) => PhotoPraisePage(),
             '/star': (context) => StarPraisePage(),
             '/leaderboard': (context) => LeaderboardPage(),
+            '/voteyou': (context) => VoteYouPage( // 夸别人时链接
+              recordId: ModalRoute.of(context)!.settings.arguments as String,
+            ),
+          },
+          // 独立的onGenerateRoute处理
+          onGenerateRoute: (settings) {
+            final uri = Uri.parse(settings.name!);
+            print('settings.name: ${settings.name}'); // 添加这行
+            // 处理/voteyou路径
+            if (uri.path == '/voteyou') {
+              // 从URL参数获取id
+              final id = uri.queryParameters['id'] ??
+                  (settings.arguments as String?);
+              print('id: $id'); // 添加这行
+              if (id != null) {
+                return MaterialPageRoute(
+                  builder: (_) => VoteYouPage(recordId: id),
+                );
+              }
+            }
+            // 其他未定义路由返回首页
+            return MaterialPageRoute(builder: (_) => HomePage());
           },
         );
       },
@@ -87,6 +112,15 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   late AnimationController _controller;
   late List<NavItem> _navItems; // 延迟初始化
 
+  void _handleDeepLink(Uri uri) {
+    if (uri.path == '/voteyou') {
+      final id = uri.queryParameters['id'];
+      if (id != null) {
+        Navigator.pushNamed(context, '/voteyou', arguments: id);
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -117,9 +151,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         color: Colors.green,
       ),
       NavItem(
-        icon: Icons.mic,
-        label: (context) => AppLocalizations.of(context)!.voicePraise,
-        route: '/voice',
+        icon: Icons.animation,
+        label: (context) => AppLocalizations.of(context)!.animatePraise,
+        route: '/animate',
         color: Colors.orange,
       ),
       NavItem(
@@ -160,6 +194,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: Padding( // 使用Padding调整logo位置和大小
+          padding: const EdgeInsets.all(8.0), // 调整padding值控制logo与AppBar边缘的距离
+          child: Image.asset(
+            'assets/logo.png', // 确保logo文件路径正确
+          ),
+        ),
         title: Text(AppLocalizations.of(context)!.title),
         centerTitle: true,
         actions: [
@@ -188,14 +228,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 ),
               ),
               // PopupMenuItem(
-              //   value: 'PraiseMe.ipa',
-              //   child: Row(
-              //     children: [
-              //       Icon(Icons.phone_iphone, color: Colors.blue),
-              //       SizedBox(width: 8),
-              //       Text('iOS')
-              //     ],
-              //   ),
+              //  value: 'PraiseMe.ipa',
+              //  child: Row(
+              //   children: [
+              //    Icon(Icons.phone_iphone, color: Colors.blue),
+              //    SizedBox(width: 8),
+              //    Text('iOS')
+              //   ],
+              //  ),
               // ),
               PopupMenuItem(
                 value: 'PraiseMe.dmg',
@@ -208,14 +248,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 ),
               ),
               // PopupMenuItem(
-              //   value: 'PraiseMe.exe',
-              //   child: Row(
-              //     children: [
-              //       Icon(Icons.laptop_windows, color: Colors.blue),
-              //       SizedBox(width: 8),
-              //       Text('Windows')
-              //     ],
-              //   ),
+              //  value: 'PraiseMe.exe',
+              //  child: Row(
+              //   children: [
+              //    Icon(Icons.laptop_windows, color: Colors.blue),
+              //    SizedBox(width: 8),
+              //    Text('Windows')
+              //   ],
+              //  ),
               // ),
             ],
           ),
@@ -300,29 +340,55 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
+  // 修改 _buildCenterWidget 函数
   Widget _buildCenterWidget() {
     return Positioned(
       left: MediaQuery.of(context).size.width / 2 - 50, // Increased size
       top: MediaQuery.of(context).size.height / 2 - 50, // Increased size
-      child: Container(
-        width: 100, // Increased size
-        height: 100, // Increased size
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            colors: [Colors.blue.shade400, Colors.purple.shade400],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+      // 使用 GestureDetector 包裹 Container
+      child: GestureDetector(
+        onTap: () {
+          // 点击事件触发时，显示 AlertDialog
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text(AppLocalizations.of(context)!.appBackgroundTitle), //  使用 AppLocalizations 获取多语言标题
+                content: SingleChildScrollView( // 使用 SingleChildScrollView 让内容可以滚动
+                  child: Text(AppLocalizations.of(context)!.appBackgroundText), // 使用 AppLocalizations 获取多语言App背景介绍
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    child: Text(AppLocalizations.of(context)!.ok),  //  使用 AppLocalizations 获取多语言 "OK" 文本
+                    onPressed: () {
+                      Navigator.of(context).pop(); // 点击后关闭对话框
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+        },
+        child: Container(
+          width: 100, // Increased size
+          height: 100, // Increased size
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [Colors.blue.shade400, Colors.purple.shade400],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 15,
+                spreadRadius: 3,
+              )
+            ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 15,
-              spreadRadius: 3,
-            )
-          ],
+          child: Icon(Icons.explore, color: Colors.white, size: 40), // 中心的指南针类似的标志
         ),
-        child: Icon(Icons.explore, color: Colors.white, size: 40), // Increased icon size
       ),
     );
   }

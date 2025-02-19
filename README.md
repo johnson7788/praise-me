@@ -14,6 +14,28 @@ The AI Praise Me app is designed to boost users' confidence and improve their mo
   - **Styled Praise**: Users can select different compliment styles, such as playful, dominant, poetic, or classic.
   - **Praise Leaderboard**: Users can share AI-generated compliments with others to spread happiness.
 
+Background & Motivation for Developing Praise Me App
+Everyone needs to be praised—that's the reason I created Praise Me. In today’s world, people often face stress, anxiety, and self-doubt. A well-timed compliment can bring warmth and encouragement. With the power of AI, I want everyone to receive praise anytime, anywhere, boosting confidence, improving mood, and making AI your personal “praise companion.”
+
+Introduction
+Praise Me is an AI-powered praise app designed to uplift users, enhance self-confidence, and bring joy. Whether you want to hear words of encouragement or share compliments with others, this app is here to make it happen.
+
+Core Value
+Celebrity Praise 🎤✨
+Get praised by famous personalities like Wang Yibo or Elon Musk. AI-generated voices can make the experience even more immersive.
+
+Praise Others 💌
+Share AI-generated compliments with friends, family, or colleagues, making praise a part of social interactions.
+
+Praise Leaderboard 🏆
+Turn praise into a fun and engaging experience, encouraging users to praise each other and compete for the top spot.
+
+Monetization Model 💰
+Integrate ads or premium features, such as personalized praise or custom voice options, to create a sustainable business model.
+
+Conclusion
+Praise Me is more than just an AI praise tool—it’s an app that spreads happiness. I hope it helps more people feel warmth and positivity, making praise a part of daily life and filling the world with encouragement and good vibes! 🚀💖
+
 ## UI Style
 The frontend features a rotating compass design, where each section can be clicked to navigate to the corresponding page.  
 Each praise mode result can be liked or shared with others (as a way of praising them).  

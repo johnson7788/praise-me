@@ -7,3 +7,5 @@ uvicorn
 gunicorn
 aiomysql
 python-multipart
+zhipuai
+aiofiles

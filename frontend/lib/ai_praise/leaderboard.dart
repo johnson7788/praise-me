@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:provider/provider.dart';
 import '../config.dart';
 import 'package:flutter/services.dart';
-import '../language_provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class LeaderboardItem {
@@ -30,6 +28,27 @@ class LeaderboardItem {
   }
 }
 
+// 新增评论数据模型
+class Comment {
+  final String commentId;
+  final String content;
+  final DateTime createdAt;
+
+  Comment({
+    required this.commentId,
+    required this.content,
+    required this.createdAt,
+  });
+
+  factory Comment.fromJson(Map<String, dynamic> json) {
+    return Comment(
+      commentId: json['comment_id'].toString(),
+      content: json['content'],
+      createdAt: DateTime.parse(json['created_at']),
+    );
+  }
+}
+
 class LeaderboardPage extends StatefulWidget {
   const LeaderboardPage({super.key});
 
@@ -40,12 +59,9 @@ class LeaderboardPage extends StatefulWidget {
 class _LeaderboardPageState extends State<LeaderboardPage> {
   List<LeaderboardItem> _leaderboardData = [];
   bool _isLoading = true;
-  String _selectedPeriod = 'daily';
-  final Map<String, String> _periodMap = {
-    'daily': 'daily',
-    'weekly': 'weekly',
-    'monthly': 'monthly',
-  };
+  final Map<String, List<Comment>> _commentsCache = {};
+  final Map<String, bool> _loadingComments = {};
+  final Map<String, bool> _expandedItems = {};
 
   @override
   void initState() {
@@ -58,7 +74,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('${AppConfig.BACKEND_API}/leaderboard?period=$_selectedPeriod'),
+        Uri.parse('${AppConfig.BACKEND_API}/leaderboard?period=monthly'),
       );
 
       if (response.statusCode == 200) {
@@ -128,7 +144,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
   }
 
   void _showShareDialog(String recordId) {
-    final shareUrl = '${AppConfig.BACKEND_API}/voteyou?id=$recordId';
+    final shareUrl = '${AppConfig.WEB_BASE_URL}/voteyou?id=$recordId';
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -165,6 +181,107 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     );
   }
 
+  // 新增评论获取方法
+  Future<void> _fetchComments(String recordId) async {
+    setState(() => _loadingComments[recordId] = true);
+
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConfig.BACKEND_API}/comments/$recordId'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _commentsCache[recordId] = (data['comments'] as List)
+              .map((c) => Comment.fromJson(c))
+              .toList();
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${AppLocalizations.of(context)!.loadCommentsFailed} (${response.statusCode})'),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${AppLocalizations.of(context)!.networkError}: $e'),
+        ),
+      );
+    } finally {
+      setState(() => _loadingComments[recordId] = false);
+    }
+  }
+
+  // 新增评论提交方法
+  Future<void> _submitComment(String recordId, String content) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConfig.BACKEND_API}/comments/$recordId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'content': content}),
+      );
+
+      if (response.statusCode == 200) {
+        // 刷新评论列表
+        await _fetchComments(recordId);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.commentSuccess),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${AppLocalizations.of(context)!.commentFailed}: ${response.body}'),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${AppLocalizations.of(context)!.networkError}: $e'),
+        ),
+      );
+    }
+  }
+
+  // 新增评论对话框
+  void _showCommentDialog(String recordId) {
+    final textController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(AppLocalizations.of(context)!.writeComment),
+        content: TextField(
+          controller: textController,
+          decoration: InputDecoration(
+            hintText: AppLocalizations.of(context)!.commentHint,
+          ),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final content = textController.text.trim();
+              if (content.isEmpty) return;
+
+              Navigator.pop(context);
+              await _submitComment(recordId, content);
+            },
+            child: Text(AppLocalizations.of(context)!.submit),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -173,30 +290,6 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.leaderboard),
-        actions: [
-          DropdownButton<String>(
-            value: _selectedPeriod,
-            icon: const Icon(Icons.arrow_drop_down),
-            onChanged: (String? newValue) {
-              if (newValue != null) {
-                setState(() => _selectedPeriod = newValue);
-                _fetchLeaderboardData();
-              }
-            },
-            items: _periodMap.entries.map((entry) {
-              return DropdownMenuItem<String>(
-                value: entry.key,
-                child: Text(
-                  entry.value,
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(width: 16),
-        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -207,6 +300,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
         itemCount: _leaderboardData.length,
         itemBuilder: (context, index) {
           final item = _leaderboardData[index];
+          final isExpanded = _expandedItems[item.recordId] ?? false; //是否展开评论
           return Card(
             elevation: 4,
             margin: const EdgeInsets.symmetric(vertical: 8),
@@ -253,35 +347,108 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.favorite,
-                          color: theme.colorScheme.error,
+                      // 点赞按钮和数字组合
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              padding: EdgeInsets.zero,  // 去除内边距
+                              constraints: const BoxConstraints(),  // 移除默认约束
+                              icon: Icon(
+                                Icons.favorite,
+                                color: theme.colorScheme.error,
+                                size: 24,  // 适当调小图标
+                              ),
+                              onPressed: () => _likeItem(item.recordId, index),
+                            ),
+                            Text(
+                              item.likes.toString(),
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: theme.colorScheme.secondary,
+                              ),
+                            ),
+                          ],
                         ),
-                        onPressed: () => _likeItem(item.recordId, index),
                       ),
-                      Text(
-                        item.likes.toString(),
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: theme.colorScheme.secondary,
-                        ),
-                      ),
-                      const SizedBox(width: 20),
+                      // 评论按钮
                       IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: const Icon(Icons.comment, size: 24),
+                        onPressed: () {
+                          setState(() {
+                            _expandedItems[item.recordId] = !isExpanded;
+                            if (isExpanded && !_commentsCache.containsKey(item.recordId)) {
+                              _fetchComments(item.recordId);
+                            }
+                          });
+                        },
+                      ),
+                      // 写评论按钮
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: const Icon(Icons.edit, size: 24),
+                        onPressed: () => _showCommentDialog(item.recordId),
+                      ),
+                      const SizedBox(width: 8),  // 缩小间距
+                      // 分享按钮
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                         icon: Icon(
                           Icons.share,
                           color: theme.colorScheme.primary,
+                          size: 24,
                         ),
                         onPressed: () => _showShareDialog(item.recordId),
                       ),
                     ],
                   ),
+                  // 评论展开区域
+                  if (isExpanded) _buildCommentsSection(item.recordId),
                 ],
               ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildCommentsSection(String recordId) {
+    final comments = _commentsCache[recordId];
+    final isLoading = _loadingComments[recordId] ?? false;
+
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Divider(),
+          Text(
+            AppLocalizations.of(context)!.comments,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.secondary,
+            ),
+          ),
+          if (isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (comments == null || comments.isEmpty)
+            Text(AppLocalizations.of(context)!.noComments)
+          else
+            ...comments.map((comment) => ListTile(
+              title: Text(comment.content),
+              subtitle: Text(
+                '${comment.createdAt.toLocal()}',
+                style: const TextStyle(fontSize: 12),
+              ),
+            )),
+        ],
       ),
     );
   }

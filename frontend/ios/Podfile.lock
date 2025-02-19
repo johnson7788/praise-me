@@ -2,10 +2,10 @@ PODS:
   - audioplayers_darwin (0.0.1):
     - Flutter
   - Flutter (1.0.0)
-  - flutter_sound (9.17.0):
+  - flutter_sound (9.23.1):
     - Flutter
-    - flutter_sound_core (= 9.17.0)
-  - flutter_sound_core (9.17.0)
+    - flutter_sound_core (= 9.23.1)
+  - flutter_sound_core (9.23.1)
   - image_picker_ios (0.0.1):
     - Flutter
   - path_provider_foundation (0.0.1):
@@ -53,8 +53,8 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   audioplayers_darwin: ccf9c770ee768abb07e26d90af093f7bab1c12ab
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  flutter_sound: 6b832c8721782b58d891064ed81a25ddd780c234
-  flutter_sound_core: 714d3f327d960314396f56018c9b63523e2960b4
+  flutter_sound: 9e4f2c89d07c223eb42bf78ea1cd6226034a4911
+  flutter_sound_core: 8d3c08efc430a06debc49a627f9b651b542e8351
   image_picker_ios: 7fe1ff8e34c1790d6fff70a32484959f563a928a
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   permission_handler_apple: 3787117e48f80715ff04a3830ca039283d6a4f29

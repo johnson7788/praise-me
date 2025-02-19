@@ -11,10 +11,11 @@ lib/
     ai_praise/
         direct_praise.dart       // 直接夸
         achievement_praise.dart  // 成就夸
-        voice_praise.dart        // 语音夸
+        animate_praise.dart        //动图夸
         photo_praise.dart        // 拍拍夸
         star_praise.dart         // 明星夸
         leaderboard.dart         // 排行榜
+        vote_you.dart            //为你点赞
     l10n/
         intl_en.art         //英语语言
         intl_zh.art         //中文语言

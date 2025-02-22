@@ -138,12 +138,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   List<NavItem> _buildNavItems() {
     return [
-      NavItem(
-        icon: Icons.record_voice_over,
-        label: (context) => AppLocalizations.of(context)!.directPraise, // 使用 AppLocalizations
-        route: '/direct',
-        color: Colors.blue,
-      ),
+      // NavItem(
+      //   icon: Icons.record_voice_over,
+      //   label: (context) => AppLocalizations.of(context)!.directPraise, // 使用 AppLocalizations
+      //   route: '/direct',
+      //   color: Colors.blue,
+      // ),
       NavItem(
         icon: Icons.lightbulb,
         label: (context) => AppLocalizations.of(context)!.achievementPraise,
@@ -151,23 +151,23 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         color: Colors.green,
       ),
       NavItem(
-        icon: Icons.animation,
-        label: (context) => AppLocalizations.of(context)!.animatePraise,
-        route: '/animate',
-        color: Colors.orange,
-      ),
-      NavItem(
-        icon: Icons.camera_alt,
-        label: (context) => AppLocalizations.of(context)!.photoPraise,
-        route: '/photo',
-        color: Colors.red,
-      ),
-      NavItem(
         icon: Icons.palette,
         label: (context) => AppLocalizations.of(context)!.starPraise,
         route: '/star',
         color: Colors.purple,
       ),
+      NavItem(
+        icon: Icons.animation,
+        label: (context) => AppLocalizations.of(context)!.animatePraise,
+        route: '/animate',
+        color: Colors.orange,
+      ),
+      // NavItem(
+      //   icon: Icons.camera_alt,
+      //   label: (context) => AppLocalizations.of(context)!.photoPraise,
+      //   route: '/photo',
+      //   color: Colors.red,
+      // ),
       NavItem(
         icon: Icons.star,
         label: (context) => AppLocalizations.of(context)!.leaderboard,
@@ -342,9 +342,17 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   // 修改 _buildCenterWidget 函数
   Widget _buildCenterWidget() {
+    double offsetX = 50.0; // 默认偏移量，适用于中文和日文
+    double offsetY = 60.0; // 默认偏移量，适用于中文和日文
+    String currentLanguage = Localizations.localeOf(context).languageCode;
+
+    if (currentLanguage == 'en') {
+      offsetX = 40.0; // 英文的偏移量，
+      offsetY = 60.0; // 英文的偏移量，您可以根据实际效果调整这个值
+    }
     return Positioned(
-      left: MediaQuery.of(context).size.width / 2 - 50, // Increased size
-      top: MediaQuery.of(context).size.height / 2 - 50, // Increased size
+      left: MediaQuery.of(context).size.width / 2 - offsetX, // Increased size
+      top: MediaQuery.of(context).size.height / 2 - offsetY, // Increased size
       // 使用 GestureDetector 包裹 Container
       child: GestureDetector(
         onTap: () {

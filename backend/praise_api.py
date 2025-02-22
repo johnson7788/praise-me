@@ -32,6 +32,7 @@ logging.basicConfig(
 # 加载环境变量
 load_dotenv(dotenv_path=".env")
 IMAGE_SAVE_DIR = "static/images"
+AUDIO_SAVE_DIR = "static/audio"
 
 # 数据库模型
 
@@ -52,6 +53,7 @@ VISION_MODEL_NAME = os.getenv("VISION_MODEL_NAME")
 VISION_API_KEY = os.getenv("VISION_API_KEY")
 GENIMG_MODEL_NAME = os.getenv("GENIMG_MODEL_NAME")
 GENIMG_API_KEY = os.getenv("GENIMG_API_KEY")
+TTS_API = os.getenv("TTS_API")
 DB_CONFIG = {
     "host": os.getenv("DB_HOST"),
     "port": int(os.getenv("DB_PORT")),
@@ -109,7 +111,7 @@ async def generate_praise_logic(input_text: str, role:str="我的好友", style:
         "original": "人物风格"
     }
     language_name = LANGUAGE_MAP.get(language, "中文")
-    logging.info(f"用户输入{input_text}，风格{style}，语言{language_name}")
+    logging.info(f"用户输入{input_text}，风格{style}，语言{language_name}, 角色: {role}")
     client = openai.OpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL)
     prompt = f"""你的身份是{role}，请对我进行夸奖：
     输入内容：{input_text}
@@ -234,7 +236,8 @@ class AchievementRequest(BaseModel):
     language: Optional[str] = "zh" # 默认为中文,可选其它语言，例如日语，英语等
 
 class StarRequest(BaseModel):
-    role: Optional[str] = None
+    role: str
+    spkid:  str
     language: Optional[str] = "zh" # 默认为中文,可选其它语言，例如日语ja，英语,en等
 
 
@@ -305,10 +308,43 @@ async def photo_praise(
 @app.post("/star-praise")
 async def star_praise(request: StarRequest):
     """明星夸模式"""
-    default_prompt = "请给我比较直白的夸奖，让我看到后满意大笑，并且在夸奖的开头加上我是xxx，并且话语风格和人物相符合"
+    # request.spkid #声音标识
+    INSTRUCT_MAP = {
+        "zh": "使用温柔的语气",
+        "en": "Use a gentle tone",  # 英文和日文的温柔语气 之后可以根据需要调整
+        "ja": "優しいトーンで",
+        "ko": "부드러운 어조로"  # 韩语
+    }
+    default_prompt = "请给我比较直白的夸奖，让我看到后满意大笑，并且话语风格和人物相符合."
     try:
         content = await generate_praise_logic(default_prompt, role=request.role,style="original",language=request.language)
-        result = {"text": content}
+        instruct_text = INSTRUCT_MAP.get(request.language, "使用温柔的语气")  # 默认指令为空，中文使用温柔语气
+        try:
+            # tts_api_url = f"{TTS_API}/api/inference_instruct"
+            tts_api_url = f"{TTS_API}/api/inference_sft"
+            params = {
+                "tts_text": content,
+                "spk_id": request.spkid,
+                # "instruct_text": instruct_text
+            }
+            logging.info(f"TTS API 请求参数: {params}")
+            response = requests.get(tts_api_url, params=params)
+            response.raise_for_status()  # 检查请求是否成功
+
+            audio_content = response.content
+            audio_filename = f"{uuid.uuid4()}.wav" # 假设TTS API 返回的是 wav 格式，根据实际情况修改
+            os.makedirs(AUDIO_SAVE_DIR, exist_ok=True)
+            audio_filepath = os.path.join(AUDIO_SAVE_DIR, audio_filename)
+
+            with open(audio_filepath, "wb") as f:
+                f.write(audio_content)
+            audio_url = f"/static/audio/{audio_filename}" # 返回前端可访问的URL
+
+            logging.info(f"语音文件保存成功: {audio_url}")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"TTS API 调用失败: {e}")
+            audio_url = "" # TTS 生成失败，语音地址为空
+        result = {"text": content, "audio_url": audio_url} # 返回夸赞文本和语音地址
         return JSONResponse(content=result, headers={"Content-Type": "application/json; charset=utf-8"})
     except Exception as e:
         raise HTTPException(500, f"生成失败: {str(e)}")
@@ -351,7 +387,8 @@ async def save_praise_record(request: SavePraiseRequest):
                 # 提交事务
                 await conn.commit()
 
-        return {"message": "记录保存成功"}
+        result = {"message": "记录保存成功"}
+        return JSONResponse(content=result, headers={"Content-Type": "application/json; charset=utf-8"})
     except Exception as e:
         logging.error(f"保存记录失败: {str(e)}")
         raise HTTPException(500, detail=f"保存失败: {str(e)}")
@@ -446,7 +483,9 @@ async def get_star_info(
         filtered = [s for s in filtered if s["language"] == language]
     if limit and limit > 0:
         filtered = filtered[:limit]
-    return {"stars": filtered}
+    result = {"stars": filtered}
+    return JSONResponse(content=result, headers={"Content-Type": "application/json; charset=utf-8"})
+
 
 # 1. 新增Pydantic模型（添加到原有模型后面）
 class CommentRequest(BaseModel):
@@ -495,7 +534,8 @@ async def add_comment(record_id: str, request: CommentRequest):
                     (record_id, request.content)
                 )
                 await conn.commit()
-                return {"message": "评论添加成功"}
+                result =  {"message": "评论添加成功"}
+                return JSONResponse(content=result, headers={"Content-Type": "application/json; charset=utf-8"})
     except HTTPException:
         raise
     except Exception as e:
@@ -525,7 +565,7 @@ async def get_praise_record(record_id: str):
                     raise HTTPException(status_code=404, detail="记录不存在")
                 # 转换datetime为字符串
                 record['created_at'] = record['created_at'].strftime("%Y-%m-%d %H:%M:%S")
-                return record
+                return JSONResponse(content=record, headers={"Content-Type": "application/json; charset=utf-8"})
     except HTTPException:
         raise
     except Exception as e:

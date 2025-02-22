@@ -4,6 +4,18 @@
 http://127.0.0.1:6002/static/app/android.app
 
 # 目录结构
+static:
+    app: 存储生的应用
+        PraiseMe.apk
+        PraiseMe.dmg
+    audio：
+        存储生成的夸夸音频
+    head:
+        明星头像
+    images:
+        存储生成的夸夸图片
+    uploads：
+        用户上传的文件
 db_init.py  //数据库初始化
 test_api.py  //测试文件
 .env 文件内容:
@@ -205,52 +217,56 @@ limit：限制返回数量
         {
             "name": "周杰伦",
             "language": "zh",
+            "spkid": "Zhoujielun",
             "sex": "male",
+            "img": "https://pic1.imgdb.cn/item/67b4810bd0e0a243d4008dc9.jpg",
             "id": 1
         },
         {
             "name": "Taylor Swift",
             "language": "en",
+            "spkid": "Taylor",
             "sex": "female",
+            "img": "https://pic1.imgdb.cn/item/67b49009d0e0a243d4009152.jpg",
             "id": 2
         }
     ]
 }
 
 
-接口文档: POST /star-praise
-功能
-此接口用于生成明星夸奖语句，返回一个根据请求语言和角色定制的夸奖内容。
+###  /star-praise (明星夸模式)
 
-请求方法
-POST
+**接口描述:**
 
-请求参数
-role (可选): string
-描述：指定夸奖语句中角色的名称或类型，帮助定制语句风格。例如：“明星名字”或“人物角色”。
-默认值：None
-language (可选): string
-描述：指定返回内容的语言。
-默认值："zh" (中文)
-支持语言：
-"zh": 中文
-"ja": 日语
-"en": 英语
-等其他支持的语言
+该接口用于生成明星风格的夸赞内容，并返回夸赞文本和语音文件地址。用户可以选择不同的明星角色和语言来定制夸赞。
 
-请求体示例
-编辑
+**HTTP 方法:** `POST`
+
+**请求 URL:**  `${API_HOST}/star-praise`
+
+**请求类型:** `application/json`
+
+**请求参数:**
+
+请求体 (JSON 格式):
 {
-  "role": "小明",
-  "language": "en"
+  "role": "string",  // 明星角色名称，例如 "Elon Musk", "Taylor Swift"。 如果不提供，后端可能使用默认角色。
+  "spkid": "zhoujielun", //必须提供，声音id
+  "language": "string" // 语言代码，用于指定夸赞文本和语音的语言。
+                     // 支持的语言代码包括:
+                     // "zh" - 中文 (默认)
+                     // "en" - 英语
+                     // "ja" - 日语
 }
-响应
-text (string): 返回生成的夸奖语句内容，带有角色名和适合的风格。
-响应体示例
-编辑
+响应体 (JSON 格式):
+JSON
 {
-  "text": "I am Xiao Ming, and you are truly amazing! Your talent shines bright and leaves everyone in awe."
+  "text": "string",      // AI 生成的夸赞文本
+  "audio_url": "string" // 夸赞语音文件的 URL, 语音文件存储在服务器的 static/audio 目录下，
+                         // 例如: "/static/audio/xxxx.wav"。
+                         // 如果语音生成失败，该字段可能为空字符串。
 }
+
 
 POST /generate-animate
 描述: 该接口接收一个文本提示，并生成一张图片，返回图片的URL。

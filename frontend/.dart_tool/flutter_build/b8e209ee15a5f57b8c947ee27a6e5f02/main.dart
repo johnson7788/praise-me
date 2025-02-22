@@ -1,5 +1,5 @@
 // @dart=3.5
-// Flutter web bootstrap script for package:AImind/main.dart.
+// Flutter web bootstrap script for package:PraiseMe/main.dart.
 //
 // Generated file. Do not edit.
 //
@@ -9,7 +9,7 @@
 import 'dart:ui_web' as ui_web;
 import 'dart:async';
 
-import 'package:AImind/main.dart' as entrypoint;
+import 'package:PraiseMe/main.dart' as entrypoint;
 import 'web_plugin_registrant.dart' as pluginRegistrant;
 
 typedef _UnaryFunction = dynamic Function(List<String> args);

@@ -6,6 +6,8 @@ flutter run -d chrome
 flutter run -d macOS  # 你想运行在 macOS 设备上
 
 
+# 注释掉Photo和直接夸，不太重要
+
 # 前端目录结构
 lib/
     ai_praise/

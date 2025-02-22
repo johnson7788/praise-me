@@ -28,7 +28,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get animatePraise => 'Animate Praise';
 
   @override
-  String get leaderboard => 'Leader board';
+  String get leaderboard => 'Leader boards';
 
   @override
   String get instantPraise => 'Instant Praise';

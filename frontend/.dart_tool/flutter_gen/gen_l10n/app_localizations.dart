@@ -142,7 +142,7 @@ abstract class AppLocalizations {
   /// No description provided for @leaderboard.
   ///
   /// In en, this message translates to:
-  /// **'Leader board'**
+  /// **'Leader boards'**
   String get leaderboard;
 
   /// No description provided for @instantPraise.

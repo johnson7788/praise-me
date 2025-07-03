@@ -1,6 +1,6 @@
 # Praise Me (夸夸我)
 
-# [https://praiseme.minitool.fun/](https://www.bilibili.com/video/BV1LyPMeSEqj/)
+# [演示视频](https://www.bilibili.com/video/BV1LyPMeSEqj/)
 
 ## Introduction
 The AI Praise Me app is designed to boost users' confidence and improve their mood, turning AI into a companion that always praises and encourages them.
